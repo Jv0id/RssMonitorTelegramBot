@@ -1363,7 +1363,7 @@ public class Handler {
                                 }
                             }
 
-                            if (chatIdArray.size() > 0) {
+                            if (!chatIdArray.isEmpty()) {
                                 SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
                                 sentRecordTableEntity.setId(Snowflake.nextIdToStr());
                                 sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
@@ -1508,7 +1508,7 @@ public class Handler {
             }
             if (StringUtils.isBlank(author)) {
                 List<SyndPerson> authors = feed.getAuthors();
-                author = authors.size() > 0 ? authors.get(0).getName() : "";
+                author = !authors.isEmpty() ? authors.get(0).getName() : "";
             }
             if (template.contains("${author}")) {
                 s = StringUtils.replace(s, "${author}", author);
@@ -1517,7 +1517,7 @@ public class Handler {
                 String html = null;
 
                 List<SyndContent> contents = entry.getContents();
-                if (contents.size() > 0) {
+                if (!contents.isEmpty()) {
                     String value = contents.get(0).getValue();
                     if (StringUtils.isNotBlank(value)) {
                         html = value;

@@ -10,6 +10,7 @@ import org.apache.hc.client5.http.fluent.Response;
 import org.apache.hc.core5.util.Timeout;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -45,7 +46,7 @@ public class GithubUtil {
             requestProxyConfig.viaProxy(request);
             Response execute = request.execute();
 
-            LatestReleaseResponse releaseAssetResponse = JSON.parseObject(execute.returnContent().asString(Charset.forName("UTF-8")), LatestReleaseResponse.class, JSONReader.Feature.SupportSmartMatch);
+            LatestReleaseResponse releaseAssetResponse = JSON.parseObject(execute.returnContent().asString(StandardCharsets.UTF_8), LatestReleaseResponse.class, JSONReader.Feature.SupportSmartMatch);
             releaseAssetResponse.setOk(true);
             return releaseAssetResponse;
         } catch (Exception e) {
