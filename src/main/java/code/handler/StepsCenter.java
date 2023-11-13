@@ -63,7 +63,7 @@ public class StepsCenter {
         }
 
         if (!permission) {
-            MessageHandle.sendMessage(stepsChatSession.getChatId(), stepsChatSession.getReplyToMessageId(), "你没有使用权限， 不过你可以自己搭建一个\nhttps://github.com/kylelin1998/RssMonitorTelegramBot", false);
+            MessageHandle.sendMessage(stepsChatSession.getChatId(), stepsChatSession.getReplyToMessageId(), "你没有使用权限， 不过你可以自己搭建一个\nhttps://github.com/Jv0id/RssMonitorTelegramBot", false);
             return;
         }
 

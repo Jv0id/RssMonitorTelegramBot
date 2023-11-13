@@ -44,7 +44,7 @@ public class Config {
 
     public final static class MetaData {
         public final static String CurrentVersion = "1.0.75";
-        public final static String GitOwner = "kylelin1998";
+        public final static String GitOwner = "Jv0id";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
         public final static String JarName = "rss-monitor-for-telegram-universal.jar";
