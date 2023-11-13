@@ -24,11 +24,11 @@ The bot's deploy steps based on the Docker, its upgrade feature also based on th
 
 #### One-click deployment
 ```
-docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=AdminChatId -e BOT_NAME=BotUsername -e BOT_TOKEN=BotToken --restart=always kylelin1998/rss-tg-bot
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=AdminChatId -e BOT_NAME=BotUsername -e BOT_TOKEN=BotToken --restart=always jp0id/rss-push-bot
 ```
 #### One-click deployment (with proxy enabled)
 ```
-docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=AdminChatId -e BOT_NAME=BotUsername -e BOT_TOKEN=BotToken -e PROXY=true -e PROXY_HOST=127.0.0.1 -e PROXY_PORT=7890 --restart=always kylelin1998/rss-tg-bot
+docker run --name rssb -d -v $(pwd)/config:/app/config -e BOT_ADMIN_ID=AdminChatId -e BOT_NAME=BotUsername -e BOT_TOKEN=BotToken -e PROXY=true -e PROXY_HOST=127.0.0.1 -e PROXY_PORT=7890 --restart=always jp0id/rss-push-bot
 ```
 
 ### Deployment method 2 (not recommended)
@@ -79,13 +79,6 @@ Run the docker image of just then build.
 ```
 docker run --name rssb -d -v $(pwd):/app --restart=always rssb
 ```
-
-## About
-My telegram: https://t.me/KyleLin1998
-
-My telegram channel: https://t.me/KyleLin1998Channel
-
-My email: email@kylelin1998.com
 
 ## Usage
 **Commands:**
