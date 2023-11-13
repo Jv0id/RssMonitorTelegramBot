@@ -63,11 +63,11 @@ public class StepsCenter {
         }
 
         if (!permission) {
-            MessageHandle.sendMessage(stepsChatSession.getChatId(), stepsChatSession.getReplyToMessageId(), "你没有使用权限， 不过你可以自己搭建一个\nhttps://github.com/Jv0id/RssMonitorTelegramBot", false);
+            MessageHandle.sendMessage(stepsChatSession.getChatId(), stepsChatSession.getReplyToMessageId(), "你没有使用权限，请联系管理员 https://t.me/pm_jp_bot 添加你的id：" + stepsChatSession.getChatId(), false);
             return;
         }
 
-        if (null != callbackData){
+        if (null != callbackData) {
             StepsHandler handler = StepsRegisterCenter.getRegister(command.getCmd());
             if (!callbackData.isInit() && !handler.hasInit(stepsChatSession)) {
                 return;
