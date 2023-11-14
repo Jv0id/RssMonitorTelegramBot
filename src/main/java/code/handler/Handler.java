@@ -610,7 +610,7 @@ public class Handler {
                     builder.append("os.arch: ");
                     builder.append(properties.getProperty("os.arch"));
 
-                    code.handler.message.MessageHandle.sendInlineKeyboardList(session.getFromId(), builder.toString(),  keyboardButton);
+                    code.handler.message.MessageHandle.sendInlineKeyboardList(session.getFromId(), builder.toString(), keyboardButton);
 
                     return StepResult.end();
                 })
@@ -1206,6 +1206,7 @@ public class Handler {
     private static void putDeleteMessage(Map<String, Object> context, Message message) {
         context.put("delete", message);
     }
+
     private static void deleteMessage(Map<String, Object> context) {
         try {
             if (context.containsKey("delete")) {
@@ -1314,12 +1315,14 @@ public class Handler {
             if ((null != on && on) || isTest || forceRecord) {
                 SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), entity.getUrl());
                 if (null == feed) {
-                    if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor5), false);
+                    if (isTest)
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor5), false);
                     return;
                 }
                 List<SyndEntry> entries = feed.getEntries();
                 if (null == entries || entries.isEmpty()) {
-                    if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
+                    if (isTest)
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
                     return;
                 }
                 if (!SentRecordTableRepository.exists(name, entity.getChatId()) || forceRecord) {
@@ -1344,7 +1347,7 @@ public class Handler {
                         continue;
                     }
 
-                    String text = replaceTemplate(template, feed, entry);
+                    String text = replaceTemplate(template, feed, entry, name);
                     if (StringUtils.isNotBlank(text)) {
                         if (!isTest) {
                             List<String> chatIdArray = JSON.parseArray(entity.getChatIdArrayJson(), String.class);
@@ -1394,6 +1397,7 @@ public class Handler {
         }
         return true;
     }
+
     private static boolean containsIncludeKeywords(String text) {
         try {
             if (StringUtils.isNotBlank(text)) {
@@ -1416,6 +1420,7 @@ public class Handler {
         }
         return false;
     }
+
     private static boolean containsExcludeKeywords(String text) {
         try {
             if (StringUtils.isNotBlank(text)) {
@@ -1488,7 +1493,7 @@ public class Handler {
         }
     }
 
-    private static String replaceTemplate(String template, SyndFeed feed, SyndEntry entry) {
+    private static String replaceTemplate(String template, SyndFeed feed, SyndEntry entry, String name) {
         try {
             if (StringUtils.isBlank(template) || null == entry) {
                 return null;
@@ -1509,6 +1514,9 @@ public class Handler {
             if (StringUtils.isBlank(author)) {
                 List<SyndPerson> authors = feed.getAuthors();
                 author = !authors.isEmpty() ? authors.get(0).getName() : "";
+            }
+            if (StringUtils.isBlank(author)) {
+                author = name;
             }
             if (template.contains("${author}")) {
                 s = StringUtils.replace(s, "${author}", author);
