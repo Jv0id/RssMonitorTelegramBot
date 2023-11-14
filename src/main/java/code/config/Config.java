@@ -43,7 +43,7 @@ public class Config {
     private static ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
 
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.77";
+        public final static String CurrentVersion = "1.0.87";
         public final static String GitOwner = "Jv0id";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
@@ -66,6 +66,7 @@ public class Config {
             configSettings.setBotAdminId(properties.getProperty("botAdminId", ""));
             configSettings.setBotName(properties.getProperty("botName", ""));
             configSettings.setBotToken(properties.getProperty("botToken", ""));
+            configSettings.setBaseUrl(properties.getProperty("base_url", "https://api.telegram.org"));
             configSettings.setOnProxy(Boolean.valueOf(properties.getProperty("botProxy", "false")));
             configSettings.setProxyHost(properties.getProperty("botProxyHost", "127.0.0.1"));
             configSettings.setProxyPort(Integer.valueOf(properties.getProperty("botProxyPort", "7890")));

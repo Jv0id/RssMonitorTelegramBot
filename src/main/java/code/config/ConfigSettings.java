@@ -26,6 +26,10 @@ public class ConfigSettings {
     @ConfigField(isNotNull = true)
     private String[] permissionChatIdArray;
 
+    @JSONField(name = "base_url")
+    @ConfigField(isNotNull = false)
+    public String baseUrl;
+
     @JSONField(name = "bot_name")
     @ConfigField(isNotNull = true)
     public String botName;

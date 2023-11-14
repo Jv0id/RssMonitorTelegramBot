@@ -9,12 +9,16 @@ import code.handler.Handler;
 import code.handler.I18nHandle;
 import code.handler.MessageHandle;
 import code.handler.store.Store;
-import code.repository.*;
+import code.repository.I18nTableRepository;
+import code.repository.MonitorTableRepository;
+import code.repository.SentRecordTableRepository;
+import code.repository.WebhookTableRepository;
 import code.util.ExceptionUtil;
 import code.util.Snowflake;
 import com.alibaba.fastjson2.JSON;
 import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
+import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
@@ -46,7 +50,8 @@ public class Main {
                     GlobalConfig = Config.readConfig();
 
                     Thread.sleep(5000);
-                } catch (InterruptedException e) {}
+                } catch (InterruptedException e) {
+                }
             }
         }).start();
 
@@ -56,8 +61,13 @@ public class Main {
         log.info("Program is running");
 
         try {
-            TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
 
+            DefaultBotOptions options = new DefaultBotOptions();
+            options.setBaseUrl(GlobalConfig.baseUrl);
+            DefaultBotSession defaultBotSession = new DefaultBotSession();
+            defaultBotSession.setOptions(options);
+
+            TelegramBotsApi botsApi = new TelegramBotsApi(defaultBotSession.getClass());
             if (GlobalConfig.getOnProxy()) {
                 Bot = new CommandsHandler(RequestProxyConfig.create().buildDefaultBotOptions());
             } else {
