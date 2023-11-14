@@ -49,6 +49,7 @@ Then create another folder named config and the config folder must contains a js
   "on_proxy": false,
   "proxy_host": "127.0.0.1",
   "proxy_port": 7890,
+  "base_url": "https://api.telegram.org",
   "bot_admin_id": "xxxx",
   "bot_name": "xxx",
   "bot_token": "xxx",

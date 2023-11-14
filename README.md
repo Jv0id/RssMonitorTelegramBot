@@ -46,6 +46,7 @@ Youtube：https://youtu.be/CiDxb1ESijQ
   "debug": false,
   "on_proxy": false,
   "proxy_host": "127.0.0.1",
+  "base_url": "https://api.telegram.org",
   "proxy_port": 7890,
   "bot_admin_id": "xxxx",
   "bot_name": "xxx",
