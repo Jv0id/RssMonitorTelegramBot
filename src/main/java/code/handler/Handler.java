@@ -1420,7 +1420,7 @@ public class Handler {
                         continue;
                     }
 
-                    String text = replaceTemplate(template, feed, entry);
+                    String text = replaceTemplate(template, feed, entry, name);
                     if (StringUtils.isNotBlank(text)) {
                         List<String> images = null;
                         Integer captureFlag = (null == entity.getCaptureFlag() ? YesOrNoEnum.No.getNum() : entity.getCaptureFlag());
@@ -1446,7 +1446,7 @@ public class Handler {
                                 }
                             }
 
-                            if (chatIdArray.size() > 0) {
+                            if (!chatIdArray.isEmpty()) {
                                 SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
                                 sentRecordTableEntity.setId(Snowflake.nextIdToStr());
                                 sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
@@ -1673,7 +1673,7 @@ public class Handler {
         }
         return "";
     }
-    private static String replaceTemplate(String template, SyndFeed feed, SyndEntry entry) {
+    private static String replaceTemplate(String template, SyndFeed feed, SyndEntry entry, String name) {
         try {
             if (StringUtils.isBlank(template) || null == entry) {
                 return null;
@@ -1731,6 +1731,9 @@ public class Handler {
             if (StringUtils.isBlank(author)) {
                 List<SyndPerson> authors = feed.getAuthors();
                 author = authors.size() > 0 ? authors.get(0).getName() : "";
+            }
+            if (StringUtils.isBlank(author)) {
+                author = name;
             }
             if (template.contains("${author}")) {
                 s = StringUtils.replace(s, "${author}", author);
