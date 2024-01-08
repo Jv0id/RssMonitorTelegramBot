@@ -11,6 +11,7 @@ import code.handler.steps.StepsChatSession;
 import code.handler.store.ChatButtonsStore;
 import code.handler.store.WebhookStore;
 import code.util.*;
+import code.util.translate.Translate;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONWriter;
 import com.rometools.rome.feed.synd.SyndContent;
@@ -23,9 +24,16 @@ import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -96,13 +104,27 @@ public class Handler {
                         if (GlobalConfig.getDebug()) {
                             log.info("Zero delay, end timestamp: {}, total time: {}", endMillis, endMillis - startMillis);
                         }
-                        TimeUnit.SECONDS.sleep(2);
+                        TimeUnit.SECONDS.sleep(5);
                     }
                 } catch (Exception e) {
                     log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
                 }
             }
         }).start();
+
+        StepsBuilder
+                .create()
+                .bindCommand(Command.Start, Command.Help)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.HelpText), false);
+                    return StepResult.end();
+                })
+                .build();
 
         // Create
         StepsBuilder
@@ -264,8 +286,11 @@ public class Handler {
                         return StepResult.ok();
                     }
 
-                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor4), false);
-
+                    if (session.getText().equals("template")) {
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor7), false);
+                    } else {
+                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UpdateMonitor4), false);
+                    }
                     return StepResult.ok();
                 }, (StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
                     String id = (String) context.get("id");
@@ -466,6 +491,37 @@ public class Handler {
                 })
                 .build();
 
+        StepsBuilder
+                .create()
+                .bindCommand(Command.SetCaptureFlag)
+                .debug(GlobalConfig.getDebug())
+                .error((Exception e, StepsChatSession session) -> {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                    MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.UnknownError), false);
+                })
+                .steps((StepsChatSession session, int index, List<String> list, Map<String, Object> context) -> {
+                    MonitorTableEntity settings = MonitorTableRepository.selectOne(session.getText(), session.getFromId());
+                    if (null != settings) {
+                        if (null == settings.getCaptureFlag()) {
+                            settings.setCaptureFlag(YesOrNoEnum.No.getNum());
+                        }
+                        boolean captureFlag = !YesOrNoEnum.get(settings.getCaptureFlag()).get().isBool();
+                        if (captureFlag) {
+                            settings.setCaptureFlag(YesOrNoEnum.Yes.getNum());
+                            MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.SetCaptureFlagOnNote), false);
+                        } else {
+                            settings.setCaptureFlag(YesOrNoEnum.No.getNum());
+                            MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.SetCaptureFlagOffNote), false);
+                        }
+                        MonitorTableRepository.update(settings);
+                        showMonitorHandle(session, session.getText());
+                    } else {
+                        MessageHandle.sendMessage(session.getChatId(), session.getReplyToMessageId(), I18nHandle.getText(session.getFromId(), I18nEnum.NotFound), false);
+                    }
+                    return StepResult.end();
+                })
+                .build();
+
         // Test
         StepsBuilder
                 .create()
@@ -610,7 +666,7 @@ public class Handler {
                     builder.append("os.arch: ");
                     builder.append(properties.getProperty("os.arch"));
 
-                    code.handler.message.MessageHandle.sendInlineKeyboardList(session.getFromId(), builder.toString(), keyboardButton);
+                    code.handler.message.MessageHandle.sendInlineKeyboardList(session.getFromId(), builder.toString(),  keyboardButton);
 
                     return StepResult.end();
                 })
@@ -1200,13 +1256,11 @@ public class Handler {
                     return StepResult.end();
                 })
                 .build();
-
     }
 
     private static void putDeleteMessage(Map<String, Object> context, Message message) {
         context.put("delete", message);
     }
-
     private static void deleteMessage(Map<String, Object> context) {
         try {
             if (context.containsKey("delete")) {
@@ -1220,6 +1274,11 @@ public class Handler {
     private static void showMonitorHandle(StepsChatSession session, String id) {
         MonitorTableEntity settings = MonitorTableRepository.selectOne(id, session.getFromId());
         if (null != settings) {
+            if (null == settings.getCaptureFlag()) {
+                settings.setCaptureFlag(YesOrNoEnum.No.getNum());
+            }
+            boolean captureFlag = YesOrNoEnum.get(settings.getCaptureFlag()).get().isBool();
+
             List<List<InlineKeyboardButton>> build = InlineKeyboardButtonListBuilder
                     .create()
                     .add(
@@ -1227,6 +1286,12 @@ public class Handler {
                                     .create()
                                     .add((YesOrNoEnum.get(settings.getEnable()).get().isBool() ? "✅ " : "") + I18nHandle.getText(session.getFromId(), I18nEnum.On), CallbackBuilder.buildCallbackData(true, session, Command.On, settings.getId()))
                                     .add((!YesOrNoEnum.get(settings.getEnable()).get().isBool() ? "❌ " : "") + I18nHandle.getText(session.getFromId(), I18nEnum.Off), CallbackBuilder.buildCallbackData(true, session, Command.Off, settings.getId()))
+                                    .build()
+                    )
+                    .add(
+                            InlineKeyboardButtonBuilder
+                                    .create()
+                                    .add((captureFlag ? "✅ " : "❌ ") + I18nHandle.getText(session.getFromId(), I18nEnum.SetCaptureFlag), CallbackBuilder.buildCallbackData(true, session, Command.SetCaptureFlag, settings.getId()))
                                     .build()
                     )
                     .add(
@@ -1315,26 +1380,29 @@ public class Handler {
             if ((null != on && on) || isTest || forceRecord) {
                 SyndFeed feed = RssUtil.getFeed(RequestProxyConfig.create(), entity.getUrl());
                 if (null == feed) {
-                    if (isTest)
-                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor5), false);
+                    if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.CreateMonitor5), false);
                     return;
                 }
                 List<SyndEntry> entries = feed.getEntries();
                 if (null == entries || entries.isEmpty()) {
-                    if (isTest)
-                        MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
+                    if (isTest) MessageHandle.sendMessage(session.getChatId(), I18nHandle.getText(session.getFromId(), I18nEnum.NothingAtAll), false);
                     return;
                 }
                 if (!SentRecordTableRepository.exists(name, entity.getChatId()) || forceRecord) {
                     for (int i = 0; i < entries.size(); i++) {
                         SyndEntry entry = entries.get(i);
 
+                        String uri = entry.getUri();
+                        if (StringUtils.isBlank(uri)) {
+                            uri = entry.getLink();
+                        }
+
                         SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
                         sentRecordTableEntity.setId(Snowflake.nextIdToStr());
                         sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
                         sentRecordTableEntity.setName(name);
                         sentRecordTableEntity.setChatId(entity.getChatId());
-                        sentRecordTableEntity.setLink(entry.getLink());
+                        sentRecordTableEntity.setUri(uri);
                         SentRecordTableRepository.save(sentRecordTableEntity);
                     }
                 }
@@ -1343,12 +1411,24 @@ public class Handler {
                 for (int i = 0; i < entries.size(); i++) {
                     SyndEntry entry = entries.get(i);
 
-                    if (SentRecordTableRepository.exists(entry.getLink(), name, entity.getChatId()) && !isTest) {
+                    String uri = entry.getUri();
+                    if (StringUtils.isBlank(uri)) {
+                        uri = entry.getLink();
+                    }
+
+                    if (SentRecordTableRepository.exists(uri, name, entity.getChatId()) && !isTest) {
                         continue;
                     }
 
-                    String text = replaceTemplate(template, feed, entry, name);
+                    String text = replaceTemplate(template, feed, entry);
                     if (StringUtils.isNotBlank(text)) {
+                        List<String> images = null;
+                        Integer captureFlag = (null == entity.getCaptureFlag() ? YesOrNoEnum.No.getNum() : entity.getCaptureFlag());
+                        Optional<Boolean> captureFlagBoolean = YesOrNoEnum.toBoolean(captureFlag);
+                        if (captureFlagBoolean.isPresent() && captureFlagBoolean.get()) {
+                            images = getImages(entry);
+                        }
+
                         if (!isTest) {
                             List<String> chatIdArray = JSON.parseArray(entity.getChatIdArrayJson(), String.class);
                             if (null == chatIdArray || chatIdArray.isEmpty()) {
@@ -1358,25 +1438,25 @@ public class Handler {
                                 if (!containsExcludeKeywords(text)) {
                                     if (isEnableIncludeKeywords()) {
                                         if (containsIncludeKeywords(text)) {
-                                            sendRss(s, session, entity, text);
+                                            sendRss(s, session, entity, text, images);
                                         }
                                     } else {
-                                        sendRss(s, session, entity, text);
+                                        sendRss(s, session, entity, text, images);
                                     }
                                 }
                             }
 
-                            if (!chatIdArray.isEmpty()) {
+                            if (chatIdArray.size() > 0) {
                                 SentRecordTableEntity sentRecordTableEntity = new SentRecordTableEntity();
                                 sentRecordTableEntity.setId(Snowflake.nextIdToStr());
                                 sentRecordTableEntity.setCreateTime(System.currentTimeMillis());
                                 sentRecordTableEntity.setName(name);
                                 sentRecordTableEntity.setChatId(entity.getChatId());
-                                sentRecordTableEntity.setLink(entry.getLink());
+                                sentRecordTableEntity.setUri(uri);
                                 SentRecordTableRepository.save(sentRecordTableEntity);
                             }
                         } else {
-                            sendRss(session.getChatId(), session, entity, text);
+                            sendRss(session.getChatId(), session, entity, text, images);
                             if (i >= 2) {
                                 break;
                             }
@@ -1397,7 +1477,6 @@ public class Handler {
         }
         return true;
     }
-
     private static boolean containsIncludeKeywords(String text) {
         try {
             if (StringUtils.isNotBlank(text)) {
@@ -1420,7 +1499,6 @@ public class Handler {
         }
         return false;
     }
-
     private static boolean containsExcludeKeywords(String text) {
         try {
             if (StringUtils.isNotBlank(text)) {
@@ -1444,7 +1522,7 @@ public class Handler {
         return false;
     }
 
-    private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text) {
+    private static void sendRss(String chatId, StepsChatSession session, MonitorTableEntity entity, String text, List<String> images) {
         List<List<InlineKeyboardButton>> build = null;
         Optional<ChatButtonsStore.ChatButtonsToInlineKeyboardButtons> buttons = ChatButtonsStore.get();
         if (buttons.isPresent()) {
@@ -1457,7 +1535,57 @@ public class Handler {
             }
         }
 
-        MessageHandle.sendMessage(chatId, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
+        boolean sendText = true;
+        if (null != images && !images.isEmpty()) {
+            try {
+                boolean sendSingleImage = true;
+                if (images.size() > 1) {
+                    List<InputMedia> inputMedia = new ArrayList<>();
+                    AtomicInteger countAtomic = new AtomicInteger(0);
+                    for (String image : images) {
+                        if (inputMedia.size() >= 10) {
+                            break;
+                        }
+                        String name = UUID.randomUUID().toString();
+                        String temp = Config.TempDir + File.separator + name + ".png";
+                        boolean download = DownloadUtil.download(RequestProxyConfig.create(), image, temp);
+                        if (download) {
+                            int count = countAtomic.addAndGet(1);
+
+                            InputMediaPhoto inputMediaPhoto = new InputMediaPhoto();
+                            inputMediaPhoto.setMedia(new File(temp), name);
+                            if (count == 1) {
+                                inputMediaPhoto.setCaption(text);
+                            }
+                            inputMedia.add(inputMediaPhoto);
+                        }
+                    }
+                    if (inputMedia.size() >= 2) {
+                        List<Message> messages = MessageHandle.sendMediaGroup(chatId, inputMedia, YesOrNoEnum.toBoolean(entity.getNotification()).get());
+                        if (null != messages && !messages.isEmpty()) {
+                            sendSingleImage = false;
+                            sendText = false;
+                        }
+                    }
+                }
+                if (sendSingleImage) {
+                    String image = images.get(0);
+                    String temp = Config.TempDir + File.separator + UUID.randomUUID() + ".png";
+                    boolean download = DownloadUtil.download(RequestProxyConfig.create(), image, temp);
+                    if (download) {
+                        Message message = MessageHandle.sendImage(chatId, null, text, new File(temp), build);
+                        if (null != message) {
+                            sendText = false;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+            }
+        }
+        if (sendText) {
+            MessageHandle.sendMessage(chatId, null, text, YesOrNoEnum.toBoolean(entity.getWebPagePreview()).get(), YesOrNoEnum.toBoolean(entity.getNotification()).get(), build);
+        }
 
         WebhookTableEntity webhookTableEntity = WebhookTableRepository.selectOne(entity.getChatId());
         if (null != webhookTableEntity) {
@@ -1493,19 +1621,108 @@ public class Handler {
         }
     }
 
-    private static String replaceTemplate(String template, SyndFeed feed, SyndEntry entry, String name) {
+    private static List<String> getImages(SyndEntry entry) {
+        List<String> list = new ArrayList<>();
+        if (null != entry) {
+            SyndContent description = entry.getDescription();
+            if ("text/html".equals(description.getType())) {
+                try {
+                    Document document = Jsoup.parse(description.getValue());
+                    if (null != document) {
+                        Elements images = document.select("img");
+                        for (Element image : images) {
+                            String imageUrl = image.attr("src");
+                            if (StringUtils.isNotBlank(imageUrl)) {
+                                list.add(imageUrl);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                }
+            }
+        }
+        return list;
+    }
+    public static String getDescription(SyndEntry entry) {
+        if (null != entry) {
+            SyndContent description = entry.getDescription();
+            if ("text/html".equals(description.getType())) {
+                return getDescription(description.getValue());
+            } else {
+                return StringUtils.defaultIfBlank(description.getValue(), "");
+            }
+        }
+        return "";
+    }
+    public static String getDescription(String html) {
+        if (null != html) {
+            try {
+                Document document = Jsoup.parse(html);
+                if (null != document) {
+                    Elements br = document.select("br");
+                    for (Element element : br) {
+                        element.html("\n");
+                    }
+                    String text = document.wholeText();
+                    return StringUtils.defaultIfBlank(text, "");
+                }
+            } catch (Exception e) {
+                log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+            }
+        }
+        return "";
+    }
+    private static String replaceTemplate(String template, SyndFeed feed, SyndEntry entry) {
         try {
             if (StringUtils.isBlank(template) || null == entry) {
                 return null;
             }
 
-            String s = template;
+            String s = new String(template);
+
+            if (template.contains("${translate")) {
+                try {
+                    String pattern = "\\$\\{translate\\|(\\w+-\\w+|\\w+)\\|\\w+\\}";
+
+                    Pattern regex = Pattern.compile(pattern);
+                    Matcher matcher = regex.matcher(s);
+
+                    while (matcher.find()) {
+                        String variable = matcher.group();
+                        if (StringUtils.isNotBlank(variable)) {
+                            String variableEdit = StringUtils.removeStart(variable, "${");
+                            variableEdit = StringUtils.removeEnd(variableEdit, "}");
+                            String[] split = StringUtils.split(variableEdit, "|");
+                            if (split.length == 3) {
+                                String s1 = split[0];
+                                String s2 = split[1];
+                                String s3 = split[2];
+
+                                String text = "";
+                                if ("title".equals(s3)) {
+                                    text = entry.getTitle();
+                                } else if ("description".equals(s3)) {
+                                    text = getDescription(entry);
+                                }
+                                String translate = Translate.translate(text, "auto", s2);
+                                s = StringUtils.replace(s, variable, translate);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                }
+            }
+
             if (template.contains("${link}")) {
                 s = StringUtils.replace(s, "${link}", entry.getLink());
             }
             if (template.contains("${title}")) {
-                System.out.println(entry.getTitle());
                 s = StringUtils.replace(s, "${title}", entry.getTitle());
+            }
+            if (template.contains("${description}")) {
+                s = StringUtils.replace(s, "${description}", getDescription(entry));
             }
             String author = entry.getAuthor();
             if (StringUtils.isBlank(author)) {
@@ -1513,10 +1730,7 @@ public class Handler {
             }
             if (StringUtils.isBlank(author)) {
                 List<SyndPerson> authors = feed.getAuthors();
-                author = !authors.isEmpty() ? authors.get(0).getName() : "";
-            }
-            if (StringUtils.isBlank(author)) {
-                author = name;
+                author = authors.size() > 0 ? authors.get(0).getName() : "";
             }
             if (template.contains("${author}")) {
                 s = StringUtils.replace(s, "${author}", author);
@@ -1525,7 +1739,7 @@ public class Handler {
                 String html = null;
 
                 List<SyndContent> contents = entry.getContents();
-                if (!contents.isEmpty()) {
+                if (contents.size() > 0) {
                     String value = contents.get(0).getValue();
                     if (StringUtils.isNotBlank(value)) {
                         html = value;

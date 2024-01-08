@@ -2,14 +2,14 @@ package code.repository;
 
 import code.config.Config;
 import code.eneity.SentRecordTableEntity;
-import code.repository.mapper.TableRepository;
+import code.repository.base.TableRepository;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class SentRecordTableRepository extends TableRepository<SentRecordTableEntity> {
 
     public SentRecordTableRepository() {
-        super(Config.DBPath);
+        super(Config.DBPath, false);
     }
 
     public void save(SentRecordTableEntity entity) {
@@ -31,9 +31,9 @@ public class SentRecordTableRepository extends TableRepository<SentRecordTableEn
     public Boolean exists(String name, String chatId) {
         return exists(null, name, chatId);
     }
-    public Boolean exists(String link, String name, String chatId) {
+    public Boolean exists(String uri, String name, String chatId) {
         SentRecordTableEntity where = new SentRecordTableEntity();
-        where.setLink(link);
+        where.setUri(uri);
         where.setName(name);
         where.setChatId(chatId);
         Integer count = super.selectCount(where);

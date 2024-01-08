@@ -1,11 +1,11 @@
 package code.eneity;
 
-import code.repository.mapper.TableEntity;
-import code.repository.mapper.TableField;
-import code.repository.mapper.TableName;
+import code.repository.base.TableEntity;
+import code.repository.base.TableField;
+import code.repository.base.TableName;
 import lombok.Data;
 
-@TableName(name = "sent_record_202306_table")
+@TableName(name = "sent_record_202312_table")
 @Data
 public class SentRecordTableEntity implements TableEntity {
 
@@ -18,8 +18,8 @@ public class SentRecordTableEntity implements TableEntity {
     @TableField(name = "name", sql = "name varchar(50)")
     private String name;
 
-    @TableField(name = "link", sql = "link text")
-    private String link;
+    @TableField(name = "uri", sql = "uri text")
+    private String uri;
 
     @TableField(name = "create_time", sql = "create_time timestamp")
     private Long createTime;

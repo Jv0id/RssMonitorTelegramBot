@@ -2,7 +2,7 @@ package code.repository;
 
 import code.config.Config;
 import code.eneity.MonitorTableEntity;
-import code.repository.mapper.TableRepository;
+import code.repository.base.TableRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.List;
 public class MonitorTableRepository extends TableRepository<MonitorTableEntity> {
 
     public MonitorTableRepository() {
-        super(Config.DBPath);
+        super(Config.DBPath, true);
     }
 
     public MonitorTableEntity selectOne(String id, String chatId) {

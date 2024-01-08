@@ -15,9 +15,13 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
@@ -33,6 +37,8 @@ public class Config {
 
     public static final String DBPath = CurrentDir + File.separator + "db.db";
 
+    public final static String TempDir = CurrentDir + File.separator + "temp";
+
     public static String TelegraphHtml = new BufferedReader(new InputStreamReader(Config.class.getResourceAsStream("telegraph.html"), StandardCharsets.UTF_8))
             .lines()
             .collect(Collectors.joining("\n"));
@@ -43,17 +49,58 @@ public class Config {
     private static ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
 
     public final static class MetaData {
-        public final static String CurrentVersion = "1.0.87";
-        public final static String GitOwner = "Jv0id";
+        public final static String CurrentVersion = "1.1.5";
+        public final static String GitOwner = "kylelin1998";
         public final static String GitRepo = "RssMonitorTelegramBot";
         public final static String ProcessName = "rss-monitor-for-telegram-universal.jar";
         public final static String JarName = "rss-monitor-for-telegram-universal.jar";
     }
 
     static {
-        File file = new File(CurrentDir);
-        if (!file.exists()) {
-            file.mkdirs();
+        mkdirs(CurrentDir, MonitorDir, TempDir);
+
+        new Thread(() -> {
+            while (true) {
+                try {
+                    File file = new File(TempDir);
+                    ArrayList<File> files = new ArrayList<>();
+                    file.list((File dir, String name) -> {
+                        File file1 = new File(dir, name);
+                        try {
+                            BasicFileAttributes attributes = Files.readAttributes(file1.toPath(), BasicFileAttributes.class);
+                            FileTime fileTime = attributes.creationTime();
+                            long millis = System.currentTimeMillis() - fileTime.toMillis();
+                            if (millis > 3600000) {
+                                files.add(file1);
+                            }
+                        } catch (IOException e) {
+                            log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                        }
+
+                        return true;
+                    });
+
+                    for (File df : files) {
+                        df.delete();
+                    }
+                } catch (Exception e) {
+                    log.error(ExceptionUtil.getStackTraceWithCustomInfoToStr(e));
+                }
+                try {
+                    TimeUnit.MINUTES.sleep(30);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+    }
+
+    private static void mkdirs(String... dirs) {
+        for (String dir : dirs) {
+            File file = new File(dir);
+            if (!file.exists()) {
+                file.mkdirs();
+            }
         }
     }
 
@@ -66,7 +113,6 @@ public class Config {
             configSettings.setBotAdminId(properties.getProperty("botAdminId", ""));
             configSettings.setBotName(properties.getProperty("botName", ""));
             configSettings.setBotToken(properties.getProperty("botToken", ""));
-            configSettings.setBaseUrl(properties.getProperty("base_url", "https://api.telegram.org"));
             configSettings.setOnProxy(Boolean.valueOf(properties.getProperty("botProxy", "false")));
             configSettings.setProxyHost(properties.getProperty("botProxyHost", "127.0.0.1"));
             configSettings.setProxyPort(Integer.valueOf(properties.getProperty("botProxyPort", "7890")));
@@ -204,6 +250,7 @@ public class Config {
                     monitorTableEntity.setCreateTime(System.currentTimeMillis());
                     monitorTableEntity.setChatIdArrayJson(JSON.toJSONString(configSettings.getChatIdArray()));
                     monitorTableEntity.setWebPagePreview(YesOrNoEnum.toInt(configSettings.getWebPagePreview()));
+                    monitorTableEntity.setCaptureFlag(YesOrNoEnum.No.getNum());
                     MonitorTableRepository.insert(monitorTableEntity);
 
                     monitorFile.delete();

@@ -1,9 +1,9 @@
 package code.eneity;
 
 import code.config.DisplayConfigAnnotation;
-import code.repository.mapper.TableEntity;
-import code.repository.mapper.TableField;
-import code.repository.mapper.TableName;
+import code.repository.base.TableEntity;
+import code.repository.base.TableField;
+import code.repository.base.TableName;
 import lombok.Data;
 
 @TableName(name = "monitor_table")
@@ -52,5 +52,13 @@ public class MonitorTableEntity implements TableEntity {
     @DisplayConfigAnnotation(i18n = "config_display_zero_delay", set = true)
     @TableField(name = "zero_delay", sql = "zero_delay int(2)")
     private Integer zeroDelay;
+
+    @DisplayConfigAnnotation(i18n = "capture_flag", set = false)
+    @TableField(name = "capture_flag", sql = "capture_flag int(2)")
+    private Integer captureFlag;
+
+    @DisplayConfigAnnotation(i18n = "translation_language", set = false)
+    @TableField(name = "translation_language", sql = "translation_language text")
+    private String translationLanguage;
 
 }

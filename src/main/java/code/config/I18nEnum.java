@@ -123,6 +123,12 @@ public enum I18nEnum {
     PleaseSendMeIncludeKeywords("please_send_me_include_keywords"),
     PleaseSendMeIncludeKeywordsRegex("please_send_me_include_keywords_regex"),
 
+    CaptureFlag("capture_flag"),
+    TranslationLanguage("translation_language"),
+    SetCaptureFlag("set_capture_flag"),
+    SetCaptureFlagOnNote("set_capture_flag_on_note"),
+    SetCaptureFlagOffNote("set_capture_flag_off_note"),
+
     ;
 
     private String key;
